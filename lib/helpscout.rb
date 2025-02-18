@@ -54,6 +54,7 @@ require 'helpscout/resources/team'
 require 'helpscout/resources/user'
 require 'helpscout/resources/webhook'
 require 'helpscout/resources/workflow'
+require 'helpscout/resources/saved_reply'
 
 require 'helpscout/types'
 

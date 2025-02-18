@@ -1,0 +1,13 @@
+[ {
+  "id" : 123456,
+  "name" : "Giving back: multiple donations",
+  "preview" : "Hi there, Yes! When you check out in our online store, you'll see an option to select a non-profit organization to donate to."
+}, {
+  "id" : 234567,
+  "name" : "Visiting us in person",
+  "preview" : "Hi there, Of course you can come visit us in person! Our next live event will be located at 1901 West Madison Street, Chicago, Illinois 60612 throughout the summer."
+}, {
+  "id" : 345678,
+  "name" : "Products: Out of stock - Generic",
+  "preview" : "Hi there. Out of stock items are typically available again within 3-4 weeks. I'll also tag you to keep you updated when we have news on this one."
+} ]

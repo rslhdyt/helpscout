@@ -22,7 +22,8 @@ module HelpScout
       Team::OBJECT_NAME => Team,
       User::OBJECT_NAME => User,
       Webhook::OBJECT_NAME => Webhook,
-      Workflow::OBJECT_NAME => Workflow
+      Workflow::OBJECT_NAME => Workflow,
+      SavedReply::OBJECT_NAME => SavedReply
     }.freeze
 
     def self.object_names_to_classes
