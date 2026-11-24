@@ -63,11 +63,14 @@ module HelpScout
   DEFAULT_BASE_URI = 'https://api.helpscout.net'
 
   @base_uri = DEFAULT_BASE_URI
+  # Process-wide token store used when no `cache` is configured.
+  @token_store = Moneta.new(:Memory, expires: true, threadsafe: true)
 
   # Note: cache should be an instance.
   # TODO: figure out if that gets us into trouble.
   class << self
     attr_accessor :base_uri, :cache
+    attr_reader :token_store
 
     # Credentials are thread-local so concurrent jobs for different accounts
     # (e.g. Sidekiq threads) never send each other's credentials.
@@ -87,11 +90,6 @@ module HelpScout
 
     def client_secret=(value)
       Thread.current.thread_variable_set(:helpscout_client_secret, value)
-    end
-
-    # Process-wide token store used when no `cache` is configured.
-    def token_store
-      @token_store ||= Moneta.new(:Memory, expires: true, threadsafe: true)
     end
   end
 

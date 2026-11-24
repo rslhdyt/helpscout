@@ -23,9 +23,11 @@ Or install it yourself as:
 Configure the library:
 
 ```ruby
+# Credentials are per thread: set them in the thread that makes the requests.
 HelpScout.client_id = 'your-client-id'
 HelpScout.client_secret = 'your-client-secret'
 
+# Optional. Access tokens are cached per set of credentials, in memory by default.
 # Any `Moneta` cache is compatible so long as it supports Expiry.
 HelpScout.cache = Moneta.new(:Redis, url: ENV['REDIS_URL'])
 ```

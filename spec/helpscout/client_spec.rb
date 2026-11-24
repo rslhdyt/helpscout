@@ -56,6 +56,7 @@ RSpec.describe HelpScout::Client do
       expect(key.call('a', 'b')).to eq(key.call('a', 'b'))
       expect(key.call('a', 'b')).not_to eq(key.call('a', 'c'))
       expect(key.call('a', 'b')).not_to eq(key.call('x', 'b'))
+      expect(key.call('a:b', 'c')).not_to eq(key.call('a', 'b:c'))
       expect(key.call('a', 'secret-value')).not_to include('secret-value')
     end
   end

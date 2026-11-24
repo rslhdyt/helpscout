@@ -91,11 +91,15 @@ RSpec.describe HelpScout::Middleware::TokenAuth do
           3.times { request }
         end
 
-        it 'stores the token with the expiry' do
-          request
-          expect(cache.key?(described_class::CACHE_KEY)).to be(true)
-          sleep(1.1)
-          expect(cache.key?(described_class::CACHE_KEY)).to be(true)
+        context 'with a short expiry' do
+          let(:expiry) { 1 }
+
+          it 'stores the token with the expiry' do
+            request
+            expect(cache.key?(described_class::CACHE_KEY)).to be(true)
+            sleep(1.1)
+            expect(cache.key?(described_class::CACHE_KEY)).to be(false)
+          end
         end
       end
 

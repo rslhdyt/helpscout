@@ -53,7 +53,7 @@ module HelpScout
 
     # One token per set of credentials, so accounts never share a token.
     def token_cache_key
-      digest = Digest::SHA256.hexdigest("#{@client_id}:#{@client_secret}")
+      digest = Digest::SHA256.hexdigest(JSON.generate([@client_id, @client_secret]))
       "#{HelpScout::Middleware::TokenAuth::CACHE_KEY}:#{digest}"
     end
   end
