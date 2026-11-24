@@ -28,6 +28,38 @@ RSpec.describe HelpScout::Client do
     end
   end
 
+  describe 'token cache' do
+    def token_middleware(client)
+      conn = client.instance_variable_get(:@connection)
+      handler = conn.builder.handlers.find { |h| h.klass == HelpScout::Middleware::TokenAuth }
+      handler.build(->(env) { env })
+    end
+
+    def client_for(id, secret, cache: nil)
+      described_class.new(client_id: id, client_secret: secret, cache: cache)
+    end
+
+    it 'uses the process token store when no cache is set' do
+      mw = token_middleware(client_for('a', 'b'))
+      expect(mw.instance_variable_get(:@cache)).to be(HelpScout.token_store)
+    end
+
+    it 'uses the configured cache when set' do
+      cache = Moneta.new(:Memory, expires: true)
+      mw = token_middleware(client_for('a', 'b', cache: cache))
+      expect(mw.instance_variable_get(:@cache)).to be(cache)
+    end
+
+    it 'keys tokens by credentials without exposing the secret' do
+      key = ->(id, secret) { token_middleware(client_for(id, secret)).instance_variable_get(:@cache_key) }
+
+      expect(key.call('a', 'b')).to eq(key.call('a', 'b'))
+      expect(key.call('a', 'b')).not_to eq(key.call('a', 'c'))
+      expect(key.call('a', 'b')).not_to eq(key.call('x', 'b'))
+      expect(key.call('a', 'secret-value')).not_to include('secret-value')
+    end
+  end
+
   describe '#execute_request' do
     let(:stubs) { Faraday::Adapter::Test::Stubs.new }
     let(:conn) { Faraday.new { |b| b.adapter(:test, stubs) } }

@@ -43,10 +43,18 @@ module HelpScout
 
       # Faraday.new doesn't seem to pass in the `headers` properly.
       @connection = Faraday::Connection.new(@base_uri, headers: DEFAULT_HEADERS) do |builder|
-        builder.use HelpScout::Middleware::TokenAuth
+        builder.use HelpScout::Middleware::TokenAuth,
+                    cache: @cache || HelpScout.token_store,
+                    cache_key: token_cache_key
 
         builder.adapter :net_http
       end
+    end
+
+    # One token per set of credentials, so accounts never share a token.
+    def token_cache_key
+      digest = Digest::SHA256.hexdigest("#{@client_id}:#{@client_secret}")
+      "#{HelpScout::Middleware::TokenAuth::CACHE_KEY}:#{digest}"
     end
   end
 end

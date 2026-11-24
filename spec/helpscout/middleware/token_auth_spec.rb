@@ -18,7 +18,7 @@ RSpec.describe HelpScout::Middleware::TokenAuth do
   end
 
   def make_app
-    described_class.new(->(env) { env }, options)
+    described_class.new(->(env) { env }, **options)
   end
 
   describe '#call' do
@@ -84,6 +84,79 @@ RSpec.describe HelpScout::Middleware::TokenAuth do
         it 'fetches new auth token' do
           fetched_token = "Bearer #{JSON.parse(body, symbolize_names: true)[:access_token]}"
           expect(auth_header(request)).to eq(fetched_token)
+        end
+
+        it 'fetches one token for several requests' do
+          expect(HelpScout::AuthToken).to receive(:create).once
+          3.times { request }
+        end
+
+        it 'stores the token with the expiry' do
+          request
+          expect(cache.key?(described_class::CACHE_KEY)).to be(true)
+          sleep(1.1)
+          expect(cache.key?(described_class::CACHE_KEY)).to be(true)
+        end
+      end
+
+      context 'with a cache key' do
+        let(:options) { { cache: cache, cache_key: 'helpscout-auth-token:abc' } }
+
+        it 'reads and writes only that key' do
+          cache.store(described_class::CACHE_KEY, token)
+          request
+          expect(cache.load('helpscout-auth-token:abc')).not_to eq(token)
+          expect(cache.load('helpscout-auth-token:abc')).not_to be_nil
+        end
+      end
+
+      context 'when the cached token is rejected' do
+        let(:fresh_token) { JSON.parse(body, symbolize_names: true)[:access_token] }
+
+        def make_app
+          statuses = @statuses
+          seen = @seen = []
+          app = lambda do |env|
+            seen << [env[:request_headers]['authorization'], env.body]
+            env.status = statuses.shift
+            env.body = 'response body'
+            env
+          end
+          described_class.new(app, **options)
+        end
+
+        def post_request
+          env = {
+            method: :post,
+            url: URI('http://example.com/v2/conversations'),
+            body: '{"a":1}',
+            request_headers: Faraday::Utils::Headers.new
+          }
+          make_app.call(Faraday::Env.from(env))
+        end
+
+        before { cache.store(described_class::CACHE_KEY, token) }
+
+        it 'fetches a new token and replays the request once' do
+          @statuses = [401, 200]
+          result = post_request
+
+          expect(result.status).to eq(200)
+          expect(@seen).to eq([["Bearer #{token}", '{"a":1}'], ["Bearer #{fresh_token}", '{"a":1}']])
+          expect(cache.load(described_class::CACHE_KEY)).to eq(fresh_token)
+        end
+
+        it 'returns a second 401 as is' do
+          @statuses = [401, 401]
+          expect(post_request.status).to eq(401)
+          expect(@seen.size).to eq(2)
+        end
+
+        it 'does not replay a 401 when the token was just fetched' do
+          cache.delete(described_class::CACHE_KEY)
+          @statuses = [401]
+          expect(post_request.status).to eq(401)
+          expect(@seen.size).to eq(1)
         end
       end
     end

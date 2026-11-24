@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'securerandom'
+require 'digest'
 
 require 'json'
 require 'moneta'
@@ -66,7 +67,32 @@ module HelpScout
   # Note: cache should be an instance.
   # TODO: figure out if that gets us into trouble.
   class << self
-    attr_accessor :base_uri, :cache, :client_id, :client_secret
+    attr_accessor :base_uri, :cache
+
+    # Credentials are thread-local so concurrent jobs for different accounts
+    # (e.g. Sidekiq threads) never send each other's credentials.
+    # thread_variable_* is used instead of Thread.current[] because the latter
+    # is fiber-local.
+    def client_id
+      Thread.current.thread_variable_get(:helpscout_client_id)
+    end
+
+    def client_id=(value)
+      Thread.current.thread_variable_set(:helpscout_client_id, value)
+    end
+
+    def client_secret
+      Thread.current.thread_variable_get(:helpscout_client_secret)
+    end
+
+    def client_secret=(value)
+      Thread.current.thread_variable_set(:helpscout_client_secret, value)
+    end
+
+    # Process-wide token store used when no `cache` is configured.
+    def token_store
+      @token_store ||= Moneta.new(:Memory, expires: true, threadsafe: true)
+    end
   end
 
   def self.new_client
